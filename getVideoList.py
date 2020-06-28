@@ -280,7 +280,8 @@ class mainRun():
                     j += 1
 
         #生成图表
-        sns.kdeplot(viewListCount,cumulative=True)
-        sns.distplot(viewListCount,norm_hist=True,fit=norm)
-        plt.savefig(path + nowTime + '_分布图.png')
-        plt.close()
+        if viewListCount.__len__() != 0:
+            sns.kdeplot(viewListCount,cumulative=True)
+            sns.distplot(viewListCount,norm_hist=True,fit=norm)
+            plt.savefig(path + nowTime + '_分布图.png')
+            plt.close()

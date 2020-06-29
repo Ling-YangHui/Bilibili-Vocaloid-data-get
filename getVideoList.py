@@ -11,6 +11,10 @@ import threading
 from threading import Thread,Lock
 import seaborn as sns
 from scipy.stats import norm
+import matplotlib.pyplot as plt
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QMainWindow, QApplication
+import sys
 
 #全局变量区域
 #在以后的维护中，请尽量少使用全局变量
@@ -188,12 +192,12 @@ class mainRun():
         paraMeterList = [0,0]
         thread = []
         for i in range(50):
-            outTxt = '    '+ keyword +'　\t | [' + str(i+1) + '/50]\t| '
-            outTxt += '█' * (i+1)
-            if i == 49:
-                print(outTxt)
-            else:
-                print(outTxt,end='\r')
+            #outTxt = '    '+ keyword +'　\t | [' + str(i+1) + '/50]\t| '
+            #outTxt += '█' * (i+1)
+            #if i == 49:
+            #    print(outTxt)
+            #else:
+            #    print(outTxt,end='\r')
 
             if paraMeterList[0] == 1:
                 continue
@@ -233,7 +237,7 @@ class mainRun():
 
     #————↓ 以下内容为本程序的主干，相当于C++程序的main()函数↓——————
     def main(self,keywordList,startDate,endDate):
-        import matplotlib.pyplot as plt
+        
         #nowTime仅用于文件命名
         nowTime = datetime.datetime.now().strftime('%Y%m%d %H%M%S')
 
@@ -249,6 +253,7 @@ class mainRun():
         endDate = self.getTime(endDate)
 
         viewList = []
+
 
         result = 'aid,bvid,uploader,title,typename,tags,pubdate,senddate,duration,view,favo,reply,LTY,YH,YZL,YZLY,ZYMK,MQX,XC,XH,CYWL,sumVocal,isJapanese' + '\n'
         for keyword in keywordList:

@@ -198,7 +198,7 @@ class mainRun():
             #    print(outTxt)
             #else:
             #    print(outTxt,end='\r')
-
+            
             if paraMeterList[0] == 1:
                 continue
             # 多线程启动

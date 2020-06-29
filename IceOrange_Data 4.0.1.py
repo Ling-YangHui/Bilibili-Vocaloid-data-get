@@ -1,6 +1,7 @@
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QMainWindow, QApplication
+from PyQt5.Qt import *
 import tkinter as tk
 from getVideoList import mainRun
 import threading
@@ -354,6 +355,13 @@ class Ui_MainWindow(object):
         self.startDay = int(startDate.strftime('%d'))
         self.startDate = startDate.strftime('%Y%m%d')
 
+    def showNoKeywordWarning(self,saying):
+        warningBox = QMessageBox(QMessageBox.Critical, "请不要这样做", saying,QMessageBox.NoButton,self.centralwidget)
+        button = warningBox.addButton('好吧',QMessageBox.YesRole)
+        warningBox.setIcon(1)
+        warningBox.setGeometry(900,500,0,0)
+        warningBox.show()
+        button.clicked.connect(warningBox.close)
 
     def addKeyword(self,num):
         if num == -1:
@@ -388,6 +396,9 @@ class Ui_MainWindow(object):
             self.endDate = qdate.toString('yyyyMMdd')
         
     def run(self):
+        if int(self.startDate) > int(self.endDate):
+            self.showNoKeywordWarning("<p>起始时间不能晚于截至时间</p>")
+            return
         if self.nowState != 0:
             self.Run.main(self.keywordList,self.startDate,self.endDate)
         else:
@@ -395,6 +406,7 @@ class Ui_MainWindow(object):
                 if self.chosenList[i] == True:
                     self.keywordList.append(self.keyword[i])
             if self.keywordList.__len__() == 0:
+                self.showNoKeywordWarning("<p>没有选中任何的关键字</p><p>这样做可能会导致程序崩溃</p>")
                 return
             self.Run.main(self.keywordList,self.startDate,self.endDate)
         self.keywordList.clear()

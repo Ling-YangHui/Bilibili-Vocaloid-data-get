@@ -150,7 +150,7 @@ class Ui_MainWindow(object):
         self.SelfDefine.setGeometry(QtCore.QRect(20, 84, 115, 40))
         self.SelfDefine.setObjectName("SelfDefine")
         self.groupBox_2 = QtWidgets.QGroupBox(self.centralwidget)
-        self.groupBox_2.setGeometry(QtCore.QRect(500, 20, 371, 171))
+        self.groupBox_2.setGeometry(QtCore.QRect(500, 20, 371, 211))
         font = QtGui.QFont()
         font.setPointSize(10)
         self.groupBox_2.setFont(font)
@@ -168,8 +168,20 @@ class Ui_MainWindow(object):
         self.dateEdit_1.setDateTime(QtCore.QDateTime(QtCore.QDate(self.startYear,self.startMonth,self.startDay), QtCore.QTime(0, 0, 0)))
         self.dateEdit_1.setCalendarPopup(True)
         self.dateEdit_1.setObjectName("dateEdit_1")
+        self.dateWarningLabel = QtWidgets.QLabel(self.groupBox_2)
+        self.dateWarningLabel.setGeometry(QtCore.QRect(180, 80, 181, 21))
+        font = QtGui.QFont()
+        font.setFamily("宋体")
+        font.setPointSize(9)
+        font.setWeight(50)
+        self.dateWarningLabel.setFont(font)
+        self.dateWarningLabel.setStyleSheet("color: red")
+        self.dateWarningLabel.setObjectName("label_3")
+        self.noLimitTime = QtWidgets.QCheckBox(self.groupBox_2)
+        self.noLimitTime.setGeometry(QtCore.QRect(20, 170, 161, 19))
+        self.noLimitTime.setObjectName("noLimitTime")
         self.groupBox_3 = QtWidgets.QGroupBox(self.centralwidget)
-        self.groupBox_3.setGeometry(QtCore.QRect(500, 210, 371, 101))
+        self.groupBox_3.setGeometry(QtCore.QRect(500, 250, 371, 101))
         font = QtGui.QFont()
         font.setPointSize(10)
         self.groupBox_3.setFont(font)
@@ -181,14 +193,14 @@ class Ui_MainWindow(object):
         self.label_2.setGeometry(QtCore.QRect(20, 30, 72, 15))
         self.label_2.setObjectName("label_2")
         self.groupBox_4 = QtWidgets.QGroupBox(self.centralwidget)
-        self.groupBox_4.setGeometry(QtCore.QRect(500, 340, 371, 111))
+        self.groupBox_4.setGeometry(QtCore.QRect(500, 370, 371, 111))
         font = QtGui.QFont()
         font.setPointSize(10)
         self.groupBox_4.setFont(font)
         self.groupBox_4.setObjectName("groupBox_4")
-        self.checkBox = QtWidgets.QCheckBox(self.groupBox_4)
-        self.checkBox.setGeometry(QtCore.QRect(30, 30, 191, 31))
-        self.checkBox.setObjectName("checkBox")
+        self.graphDrawing = QtWidgets.QCheckBox(self.groupBox_4)
+        self.graphDrawing.setGeometry(QtCore.QRect(30, 30, 191, 31))
+        self.graphDrawing.setObjectName("graphDrawing")
         self.checkBox_2 = QtWidgets.QCheckBox(self.groupBox_4)
         self.checkBox_2.setGeometry(QtCore.QRect(30, 60, 221, 31))
         self.checkBox_2.setObjectName("checkBox_2")
@@ -299,6 +311,9 @@ class Ui_MainWindow(object):
 
         self.dateEdit_1.dateChanged.connect(lambda:self.setTime(1))
         self.dateEdit_2.dateChanged.connect(lambda:self.setTime(2))
+        self.noLimitTime.toggled['bool'].connect(lambda:self.changeTimeLimit())
+
+        self.graphDrawing.toggled['bool'].connect(lambda:self.setDrawGraph())
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -326,12 +341,16 @@ class Ui_MainWindow(object):
         self.label.setText(_translate("MainWindow", "至"))
         self.dateEdit_2.setDisplayFormat(_translate("MainWindow", "yyyy年  M月d日"))
         self.dateEdit_1.setDisplayFormat(_translate("MainWindow", "yyyy年  M月d日"))
+        self.dateWarningLabel.setText(_translate("MainWindow", "起始时间不能晚于结束时间"))
+        self.noLimitTime.setText(_translate("MainWindow", "时间不限"))
         self.groupBox_3.setTitle(_translate("MainWindow", "输出"))
         self.label_2.setText(_translate("MainWindow", "输出目录"))
         self.groupBox_4.setTitle(_translate("MainWindow", "选项"))
-        self.checkBox.setText(_translate("MainWindow", "绘制分布图"))
+        self.graphDrawing.setText(_translate("MainWindow", "绘制分布图"))
         self.checkBox_2.setText(_translate("MainWindow", "仅限VOCALOID-UTAU分区"))
         self.commandLinkButton.setText(_translate("MainWindow", "运行"))
+        
+        self.dateWarningLabel.close()
 
     def __init__(self):
         super().__init__()
@@ -344,16 +363,22 @@ class Ui_MainWindow(object):
         for i in range (16):
             self.chosenList.append(False)
         self.nowState = 0 #当前选择状态 【-1：VCN；-2：SCN；0：SDF】
+
         self.endYear = int(datetime.datetime.now().strftime('%Y'))
         self.endMonth = int(datetime.datetime.now().strftime('%m'))
         self.endDay = int(datetime.datetime.now().strftime('%d'))
         self.endDate = datetime.datetime.now().strftime('%Y%m%d')
-
         startDate = datetime.datetime.now() + datetime.timedelta(days=-31)
         self.startYear = int(startDate.strftime('%Y'))
         self.startMonth = int(startDate.strftime('%m'))
         self.startDay = int(startDate.strftime('%d'))
         self.startDate = startDate.strftime('%Y%m%d')
+        self.endDateCache = self.endDate
+        self.startDateCache = self.startDate
+        self.isNoLimit = 0
+
+        self.isDateWarning = 0
+        self.drawGraph = 0
 
     def showNoKeywordWarning(self,saying):
         warningBox = QMessageBox(QMessageBox.Critical, "请不要这样做", saying,QMessageBox.NoButton,self.centralwidget)
@@ -362,6 +387,23 @@ class Ui_MainWindow(object):
         warningBox.setGeometry(900,500,0,0)
         warningBox.show()
         button.clicked.connect(warningBox.close)
+
+    def showProgressWindow(self):
+        self.progressWin = QProgressDialog(self.centralwidget)
+        self.progressWin.setWindowModality(Qt.ApplicationModal)
+        self.progressWin.setMinimum(0)
+        self.progressWin.setMaximum(100)
+        self.progressWin.setGeometry(900,450,300,120)
+        self.progressWin.setStyleSheet('font: 10pt \"宋体\" rgb(0,0,0)')
+        self.progressWin.show()
+
+    def changeProgressWindow(self,mode,num,keyword,percent):
+        if mode == 0:
+            self.progressWin.setWindowTitle('正在处理中' + str(num) + '/' + str(self.keywordList.__len__()))
+            self.progressWin.setLabelText(keyword)
+            self.progressWin.setValue(0)
+        elif mode == 1:
+            self.progressWin.setValue(percent)
 
     def addKeyword(self,num):
         if num == -1:
@@ -391,16 +433,43 @@ class Ui_MainWindow(object):
         if num == 1:
             qdate = self.dateEdit_1.dateTime()
             self.startDate = qdate.toString('yyyyMMdd')
+            self.startDateCache = self.startDate
         elif num == 2:
             qdate = self.dateEdit_2.dateTime()
             self.endDate = qdate.toString('yyyyMMdd')
+            self.endDateCache = self.endDate
+        if int(self.endDate) < int(self.startDate) and self.isDateWarning == 0:
+            self.isDateWarning = 1
+            self.dateWarningLabel.show()
+        elif int(self.endDate) > int(self.startDate) and self.isDateWarning == 1:
+            self.dateWarningLabel.close()
+
+    def changeTimeLimit(self):
+        if self.isNoLimit == 0:
+            self.dateEdit_1.setDisabled(True)
+            self.dateEdit_2.setDisabled(True)
+            self.startDate = '19990101'
+            self.endDate = '20260826'
+            self.isNoLimit = 1
+        else:
+            self.dateEdit_1.setEnabled(True)
+            self.dateEdit_2.setEnabled(True)
+            self.startDate = self.startDateCache
+            self.endDate = self.endDateCache
+            self.isNoLimit = 0
+
+    def setDrawGraph(self):
+        if self.drawGraph == 0:
+            self.drawGraph = 1
+        else:
+            self.drawGraph = 0
         
     def run(self):
         if int(self.startDate) > int(self.endDate):
             self.showNoKeywordWarning("<p>起始时间不能晚于截至时间</p>")
             return
         if self.nowState != 0:
-            self.Run.main(self.keywordList,self.startDate,self.endDate)
+            self.Run.main(self.keywordList,self.startDate,self.endDate,self.drawGraph,self)
         else:
             for i in range(self.chosenList.__len__()):
                 if self.chosenList[i] == True:
@@ -408,9 +477,8 @@ class Ui_MainWindow(object):
             if self.keywordList.__len__() == 0:
                 self.showNoKeywordWarning("<p>没有选中任何的关键字</p><p>这样做可能会导致程序崩溃</p>")
                 return
-            self.Run.main(self.keywordList,self.startDate,self.endDate)
+            self.Run.main(self.keywordList,self.startDate,self.endDate,self.drawGraph,self)
         self.keywordList.clear()
-
 
 app = QtWidgets.QApplication(sys.argv)
 MainWindow = QtWidgets.QMainWindow()

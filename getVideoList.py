@@ -28,6 +28,7 @@ class mainRun():
         super().__init__()
         self.lock = threading.Lock() #线程互斥锁
         self.timeSleep = [0.1,0.15]
+        self.numGet = 0
 
     class HASHLIST():
         #哈希表类
@@ -186,7 +187,7 @@ class mainRun():
         fileTxt[0] += resultTxt
         self.lock.release()
 
-    def searchByKeyword(self,hashList,keyword,startDate,endDate,viewList):
+    def searchByKeyword(self,hashList,keyword,startDate,endDate,viewList,mainWindow):
         #本函数旨在输入关键字和总页码数，返回一段文本。这段文本是使用UTF-8编码的
         fileTxt = ['']
         paraMeterList = [0,0]
@@ -198,7 +199,7 @@ class mainRun():
             #    print(outTxt)
             #else:
             #    print(outTxt,end='\r')
-            
+            mainWindow.changeProgressWindow(1,0,'',i * 2)
             if paraMeterList[0] == 1:
                 continue
             # 多线程启动
@@ -210,8 +211,8 @@ class mainRun():
 
         for t in thread:
             t.join()
-
-        print (str(paraMeterList[1]) + 'items got')    
+           
+        self.numGet += paraMeterList[1]
         return fileTxt[0]
 
     def processFunction(self,num,typeNum):
@@ -236,7 +237,7 @@ class mainRun():
         return newArray
 
     #————↓ 以下内容为本程序的主干，相当于C++程序的main()函数↓——————
-    def main(self,keywordList,startDate,endDate):
+    def main(self,keywordList,startDate,endDate,drawGraph,mainWindow):
         
         #nowTime仅用于文件命名
         nowTime = datetime.datetime.now().strftime('%Y%m%d %H%M%S')
@@ -256,9 +257,15 @@ class mainRun():
 
 
         result = 'aid,bvid,uploader,title,typename,tags,pubdate,senddate,duration,view,favo,reply,LTY,YH,YZL,YZLY,ZYMK,MQX,XC,XH,CYWL,sumVocal,isJapanese' + '\n'
+        mainWindow.showProgressWindow()
+        i = 0
         for keyword in keywordList:
-            result += self.searchByKeyword(hashList,keyword,startDate,endDate,viewList)
+            i += 1
+            mainWindow.changeProgressWindow(0,i,keyword,0)
+            result += self.searchByKeyword(hashList,keyword,startDate,endDate,viewList,mainWindow)
         
+        mainWindow.progressWin.close()
+        mainWindow.showNoKeywordWarning('查找完成，一共获得' + str(self.numGet) + '项')
         adrres = path + nowTime + ' 查找结果.csv'    
         file1 = open(adrres,'w')
         result = result.replace('<>','')
@@ -285,7 +292,7 @@ class mainRun():
                     j += 1
 
         #生成图表
-        if viewListCount.__len__() != 0:
+        if viewListCount.__len__() != 0 and drawGraph == 1:
             sns.kdeplot(viewListCount,cumulative=True)
             sns.distplot(viewListCount,norm_hist=True,fit=norm)
             plt.savefig(path + nowTime + '_分布图.png')

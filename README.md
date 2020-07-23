@@ -26,4 +26,4 @@ YangHui
 
 ## News
 
-This may be the last version of IceOrange_Data. In the coming months we will not release new version unless Bilibili change its website which makes the program crash. If you have some advice or problems, please contact me via the E-mail 2411046022@qq.com.
+This may be the last version of IceOrange_Data. In the coming months, we will not release any new version unless Bilibili changes its website which makes the program crash. If you have some advice or problems, please contact me via the E-mail 2411046022@qq.com.

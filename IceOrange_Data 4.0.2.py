@@ -380,8 +380,8 @@ class Ui_MainWindow(object):
         self.isDateWarning = 0
         self.drawGraph = 0
 
-    def showNoKeywordWarning(self,saying):
-        warningBox = QMessageBox(QMessageBox.Critical, "请不要这样做", saying,QMessageBox.NoButton,self.centralwidget)
+    def showNoKeywordWarning(self,saying,head):
+        warningBox = QMessageBox(QMessageBox.Critical, head, saying,QMessageBox.NoButton,self.centralwidget)
         button = warningBox.addButton('好吧',QMessageBox.YesRole)
         warningBox.setIcon(1)
         warningBox.setGeometry(900,500,0,0)
@@ -466,7 +466,7 @@ class Ui_MainWindow(object):
         
     def run(self):
         if int(self.startDate) > int(self.endDate):
-            self.showNoKeywordWarning("<p>起始时间不能晚于截至时间</p>")
+            self.showNoKeywordWarning("<p>起始时间不能晚于截至时间</p>","请不要这样做")
             return
         if self.nowState != 0:
             self.Run.main(self.keywordList,self.startDate,self.endDate,self.drawGraph,self)
@@ -475,7 +475,7 @@ class Ui_MainWindow(object):
                 if self.chosenList[i] == True:
                     self.keywordList.append(self.keyword[i])
             if self.keywordList.__len__() == 0:
-                self.showNoKeywordWarning("<p>没有选中任何的关键字</p><p>这样做可能会导致程序崩溃</p>")
+                self.showNoKeywordWarning("<p>没有选中任何的关键字</p><p>这样做可能会导致程序崩溃</p>","请不要这样做")
                 return
             self.Run.main(self.keywordList,self.startDate,self.endDate,self.drawGraph,self)
         self.keywordList.clear()

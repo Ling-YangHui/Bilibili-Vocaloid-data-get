@@ -265,7 +265,7 @@ class mainRun():
             result += self.searchByKeyword(hashList,keyword,startDate,endDate,viewList,mainWindow)
         
         mainWindow.progressWin.close()
-        mainWindow.showNoKeywordWarning('查找完成，一共获得' + str(self.numGet) + '项')
+        mainWindow.showNoKeywordWarning('查找完成，一共获得' + str(self.numGet) + '项',"运行完毕")
         adrres = path + nowTime + ' 查找结果.csv'    
         file1 = open(adrres,'w')
         result = result.replace('<>','')

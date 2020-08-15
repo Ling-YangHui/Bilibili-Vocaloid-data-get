@@ -12,23 +12,88 @@ from threading import Thread,Lock
 import seaborn as sns
 from scipy.stats import norm
 import matplotlib.pyplot as plt
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QMainWindow, QApplication
 import sys
+import numpy as np
 
 #全局变量区域
 #在以后的维护中，请尽量少使用全局变量
-lock = threading.Lock() #线程互斥锁
+lock = threading.Lock() #线程互斥
 timeSleep = [0.1,0.15]
 
 class mainRun():
-    #全局变量区域
     #在以后的维护中，请尽量少使用全局变量
     def __init__(self):
         super().__init__()
-        self.lock = threading.Lock() #线程互斥锁
+        self.lock = threading.Lock() #线程互斥
         self.timeSleep = [0.1,0.15]
         self.numGet = 0
+
+    class VOCALS_DATA_ANALYSIS():
+        #数据分析方法
+        def __init__(self):
+            self.singerList = [[] for i in range(15)]
+
+        def addData(self,singerID,view):
+            self.singerList[singerID].append(view)
+
+        def writeVocalList(self):
+            vocalList = [u'洛天依',u'言和',u'乐正绫',u'乐正龙牙',u'徵羽摩柯',u'墨清弦',u'星尘',u'心华',u'初音未来',u'海伊',u'苍穹',u'诗岸',u'赤羽',u'牧心',u'艾可'] #纵向表头
+            fieldList = [u'歌姬',u'投稿数',u'过千数',u'过万数',u'殿堂数',u'p-90 %',u'p-95 %',u'p-97.5 %',u'最大数',u'总和']#横向表头
+            txt = ''
+            for i in range(len(fieldList)):
+                txt += fieldList[i] + ','
+            txt += '\n'
+            for id in range(len(vocalList)):#id指歌姬序号
+                npArray = np.asarray(self.singerList[id])#根据Python自带的list创建一个np里的array
+                currentLine = ''
+                currentLine += vocalList[id] + ',' #歌姬
+                currentLine += str(np.sum(npArray >= 0)) + ',' #投稿
+                currentLine += str(np.sum(npArray >= 1000)) + ',' #过千数
+                currentLine += str(np.sum(npArray >= 10000)) + ',' #过万数
+                currentLine += str(np.sum(npArray >= 100000)) + ',' #殿堂数
+                currentLine += str(np.percentile(npArray,90)) + ','
+                currentLine += str(np.percentile(npArray,95)) + ','
+                currentLine += str(np.percentile(npArray,97.5)) + ','
+                currentLine += str(np.amax(npArray)) + ','
+                currentLine += str(np.sum(npArray)) + ','
+                txt += currentLine + '\n'
+            return txt
+
+        def writeEnginesSheet(self):
+            engineList = [u'中文VOCALOID',u'中文Synthesizer V',u'整体'] #纵向表头
+            fieldList = [u'引擎',u'投稿数',u'过千数',u'过万数',u'殿堂数',u'p-90 %',u'p-95 %',u'p-97.5 %',u'最大值',u'总和']#横向表头
+
+            txt = ''
+            for i in range(len(fieldList)):
+                txt += fieldList[i] + ','
+            txt += '\n'
+            for id in range(len(engineList)):#id指引擎序号
+                array = []
+                if id == 0:
+                    for i in range(9):
+                        array += self.singerList[i]
+                elif id == 1:
+                    for i in range(9,15):
+                        array += self.singerList[i]
+                else:
+                    for i in range(15):
+                        array += self.singerList[i]
+                
+                npArray = np.asarray(array)
+                currentLine = ''
+                currentLine += engineList[id] + ','
+                currentLine += str(np.sum(npArray >= 0)) + ','
+                currentLine += str(np.sum(npArray >= 1000)) + ','
+                currentLine += str(np.sum(npArray >= 10000)) + ','
+                currentLine += str(np.sum(npArray >= 100000)) + ','
+                currentLine += str(np.percentile(npArray,90)) + ','
+                currentLine += str(np.percentile(npArray,95)) + ','
+                currentLine += str(np.percentile(npArray,97.5)) + ','
+                currentLine += str(np.amax(npArray)) + ','
+                currentLine += str(np.sum(npArray)) + ','
+                txt += currentLine + '\n'
+
+            return txt
 
     class HASHLIST():
         #哈希表类
@@ -79,7 +144,7 @@ class mainRun():
         endTime = startTime + int(deltaTime)/24.0/3600 + 1/3
         return (str(endTime))
 
-    def getVideoList(self,hashList,keyword,page,startDate,endDate,paraMeterList,viewList,fileTxt):
+    def getVideoList(self,hashList,keyword,page,startDate,endDate,paraMeterList,viewList,fileTxt,vocalsDataAnalysis):
         #变量paraMeterList：【日期截至位，信息获取条数位】
         if paraMeterList[0] == 1:
             return
@@ -98,7 +163,7 @@ class mainRun():
         web = web.replace('''em class=\\"keyword\\"''','')
         web = web.replace('''/em''','')
 
-        #json转化为字典格式
+        #json转化为字典格�?
         jsonDate = json.loads(web)
 
         subWeb = web.split('''},{''')#将一长串文本分割检测份数
@@ -127,11 +192,11 @@ class mainRun():
                 paraMeterList[0] = 1
                 break
             if int(float(videoDate.get('pubdate'))) > int(float(endDate)):
-                self.lock.release
+                self.lock.release()
                 continue
             self.lock.release()
 
-            #获取字典中各项数值，加入到video类中去
+            #获取字典中各项数值，加入到video类中
             video.title = '"' + videoDate['title'] + '"'
             video.author = '"' + videoDate['author'] + '"'
             video.typename = '"' + videoDate['typename'] + '"'
@@ -145,16 +210,25 @@ class mainRun():
             video.aid = str(videoDate['aid'])
             video.bvid = str(videoDate['bvid'])
 
-            #计算不同tag的相对观看数量值
-            video.vocalInfo = [0,0,0,0,0,0,0,0,0]
-            vocalList = [u'天依',u'言和',u'阿绫',u'龙牙',u'摩柯',u'墨清弦',u'星尘',u'心华',u'初音',]
-            for j in range(9):
+            #计算不同tag的相对观看数量
+            video.vocalInfo = [0] * 15
+            vocalList = [u'天依',u'言和',u'乐正绫',u'龙牙',u'摩柯',u'墨清弦',u'星尘',u'心华',u'初音',u'海伊',u'苍穹',u'诗岸',u'赤羽',u'牧心',u'艾可']
+            
+            for j in range(len(vocalList)):
                 if (video.title.count(vocalList[j]) + video.tag.count(vocalList[j]) > 0):
                     video.vocalInfo[j] = 1
-            sumVocal = sum(video.vocalInfo)
-            for j in range(9):
-                if (video.vocalInfo[j] > 0):
+
+            sumV = sum (video.vocalInfo[0:9])
+            sumSV = sum (video.vocalInfo[9:15])
+            sumVocal = sumV + sumSV
+            
+            for j in range(len(vocalList)):
+                if (video.vocalInfo[j] > 0 and sumVocal > 0):
+                    self.lock.acquire()
                     video.vocalInfo[j] = int(video.view) / sumVocal
+                    if (self.isJapanese(video.title + video.tag) == False):
+                        vocalsDataAnalysis.addData(j,video.vocalInfo[j])
+                    self.lock.release()
 
             # 以下若干行有关于subResultTxt的代码，是用来将各个参数拼接成一行文本，它们用半角逗号隔开
             subResultTxt = video.aid + ','
@@ -170,40 +244,43 @@ class mainRun():
             subResultTxt = subResultTxt + video.favorite + ','
             subResultTxt = subResultTxt + video.reply + ','
 
-            #拼接加入tag的数量
-            for j in range(9):
-                subResultTxt = subResultTxt + str(video.vocalInfo[j]) + ','
-            subResultTxt = subResultTxt + str(sumVocal) + ',' + str(self.isJapanese(video.title + video.tag)) + '\n'
+            #拼接加入tag的数
+            for j in range(len(vocalList)):
+                subResultTxt = subResultTxt + str(video.vocalInfo[j]) + ''','''
+            subResultTxt = subResultTxt + str(sumV) + ',' + str(sumSV) + ',' + str(sumVocal) + ','  + str(self.isJapanese(video.title + video.tag)) + '\n'
 
             #resultTxt20个subResultTxt相加得到的，本函数最终返回它
             resultTxt = resultTxt + subResultTxt
 
-            #后续处理，添加播放量到列表中，参数表中显示播放量的列表 + 1，注意线程上锁
+            #后续处理，添加播放量到列表中，参数表中显示播放量的列 + 1，注意线程上锁
             self.lock.acquire()
             viewList.append(int(video.view))
             paraMeterList[1] += 1
             self.lock.release()
+            
         self.lock.acquire()
-        fileTxt[0] += resultTxt
+        fileTxt[0] += resultTxt #把filetxt填上本区域的结果
         self.lock.release()
 
-    def searchByKeyword(self,hashList,keyword,startDate,endDate,viewList,mainWindow):
-        #本函数旨在输入关键字和总页码数，返回一段文本。这段文本是使用UTF-8编码的
+    def searchByKeyword(self,hashList,keyword,startDate,endDate,viewList,vocalsDataAnalysis,mainWindow,isWindow):
+        #本函数旨在输入关键字和总页码数，返回一段文本。这段文本是使用UTF-8编码
         fileTxt = ['']
         paraMeterList = [0,0]
         thread = []
         for i in range(50):
-            #outTxt = '    '+ keyword +'　\t | [' + str(i+1) + '/50]\t| '
-            #outTxt += '█' * (i+1)
-            #if i == 49:
-            #    print(outTxt)
-            #else:
-            #    print(outTxt,end='\r')
-            mainWindow.changeProgressWindow(1,0,'',i * 2)
+            if isWindow:
+                mainWindow.changeProgressWindow(1,0,'',i * 2)
+            else:
+                outTxt = '    '+ keyword +'　\t | [' + str(i+1) + '/50]\t| '
+                outTxt += '█' * (i+1)
+                if i == 49:
+                    print(outTxt)
+                else:
+                    print(outTxt,end='\r')
             if paraMeterList[0] == 1:
                 continue
             # 多线程启动
-            t = threading.Thread(target=self.getVideoList,args=(hashList,keyword,i + 1,startDate,endDate,paraMeterList,viewList,fileTxt))
+            t = threading.Thread(target=self.getVideoList,args=(hashList,keyword,i + 1,startDate,endDate,paraMeterList,viewList,fileTxt,vocalsDataAnalysis))
             thread.append(t)
             t.setDaemon(True)
             t.start()
@@ -236,9 +313,11 @@ class mainRun():
             newArray[i] = self.processFunction(newArray[i],1)
         return newArray
 
-    #————↓ 以下内容为本程序的主干，相当于C++程序的main()函数↓——————
-    def main(self,keywordList,startDate,endDate,drawGraph,mainWindow):
-        
+    #————↓ 以下内容为本程序的主干，相当于C++程序的main()函数↓—————
+    def main(self,keywordList,startDate,endDate,drawGraph,mainWindow,isWindow):
+        if isWindow:
+            from PyQt5 import QtCore, QtGui, QtWidgets
+            from PyQt5.QtWidgets import QMainWindow, QApplication
         #nowTime仅用于文件命名
         nowTime = datetime.datetime.now().strftime('%Y%m%d %H%M%S')
 
@@ -254,23 +333,37 @@ class mainRun():
         endDate = self.getTime(endDate)
 
         viewList = []
+        vocalsDataAnalysis = self.VOCALS_DATA_ANALYSIS()
 
-
-        result = 'aid,bvid,uploader,title,typename,tags,pubdate,senddate,duration,view,favo,reply,LTY,YH,YZL,YZLY,ZYMK,MQX,XC,XH,CYWL,sumVocal,isJapanese' + '\n'
-        mainWindow.showProgressWindow()
+        result = 'AV号,BV号,up主,标题,分区,标签Tag,发布日期,上传日期/最后修改日期,时长,播放,收藏,评论,洛天依,言和,乐正绫,乐正龙牙,徵羽摩柯,墨清弦,星尘,心华,初音未来,海伊,苍穹,诗岸,赤羽,牧心,艾可,V小记,SV小记,总计,是否为日语' + '\n'
+        if isWindow:
+            mainWindow.showProgressWindow()
         i = 0
         for keyword in keywordList:
             i += 1
-            mainWindow.changeProgressWindow(0,i,keyword,0)
-            result += self.searchByKeyword(hashList,keyword,startDate,endDate,viewList,mainWindow)
+            if isWindow:
+                mainWindow.changeProgressWindow(0,i,keyword,0)
+            result += self.searchByKeyword(hashList,keyword,startDate,endDate,viewList,vocalsDataAnalysis,mainWindow,isWindow)
         
-        mainWindow.progressWin.close()
-        mainWindow.showNoKeywordWarning('查找完成，一共获得' + str(self.numGet) + '项',"运行完毕")
-        adrres = path + nowTime + ' 查找结果.csv'    
-        file1 = open(adrres,'w')
+        if isWindow:
+            mainWindow.progressWin.close()
+            mainWindow.showNoKeywordWarning('查找完成，一共获取' + str(self.numGet) + '项',"运行完毕")   
+        file1 = open(path + 'video_sheet_' + nowTime + '.csv','w')
         result = result.replace('<>','')
         file1.write(result.encode('gbk','ignore').decode('gbk','ignore'))
         viewList.sort(reverse = False)
+
+        #写出歌姬数据
+        fileOutput = open(path + 'vocals_sheet_' + nowTime + '.csv','w')
+        result = vocalsDataAnalysis.writeVocalList()
+        result = result.replace(',\n','\n')
+        fileOutput.write(result.encode('gbk','ignore').decode('gbk','ignore'))
+        
+        #写出引擎数据
+        fileOutput = open(path + 'engines_sheet_' + nowTime + '.csv','w')
+        result = vocalsDataAnalysis.writeEnginesSheet()
+        result = result.replace(',\n','\n')
+        fileOutput.write(result.encode('gbk','ignore').decode('gbk','ignore'))
 
         #移动平均
         viewListMA = self.movingAverage(viewList)

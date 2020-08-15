@@ -358,7 +358,8 @@ class Ui_MainWindow(object):
         self.keywordList = [] #传入的名单
         self.keyword = ['','洛天依','乐正绫','言和','墨清弦','乐正龙牙','徵羽摩柯','星尘','心华','初音未来','海伊','赤羽','诗岸','苍穹','SynthV','艾可']
         self.VCN = ['洛天依','乐正绫','言和','墨清弦','乐正龙牙','徵羽摩柯','星尘','心华','初音未来']
-        self.SCN = ['海伊','赤羽','诗岸','苍穹','SynthV','艾可']
+        self.SCN = ['海伊','赤羽','诗岸','苍穹','SynthV','艾可']#添加牧心
+        #星尘Minus的算法问题待议，根据萌娘百科、VC周刊、SV周刊的做法
         self.chosenList = [] #选择列表
         for i in range (16):
             self.chosenList.append(False)
@@ -469,7 +470,7 @@ class Ui_MainWindow(object):
             self.showNoKeywordWarning("<p>起始时间不能晚于截至时间</p>","请不要这样做")
             return
         if self.nowState != 0:
-            self.Run.main(self.keywordList,self.startDate,self.endDate,self.drawGraph,self)
+            self.Run.main(self.keywordList,self.startDate,self.endDate,self.drawGraph,self,True)
         else:
             for i in range(self.chosenList.__len__()):
                 if self.chosenList[i] == True:
@@ -477,7 +478,7 @@ class Ui_MainWindow(object):
             if self.keywordList.__len__() == 0:
                 self.showNoKeywordWarning("<p>没有选中任何的关键字</p><p>这样做可能会导致程序崩溃</p>","请不要这样做")
                 return
-            self.Run.main(self.keywordList,self.startDate,self.endDate,self.drawGraph,self)
+            self.Run.main(self.keywordList,self.startDate,self.endDate,self.drawGraph,self,True)
         self.keywordList.clear()
 
 app = QtWidgets.QApplication(sys.argv)
